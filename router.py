@@ -68,7 +68,6 @@ async def camera_connection(websocket: WebSocket):
                 print("Ошибка декодирования JSON")
             except Exception as e:
                 print(f"Ошибка при приеме сообщения: {e}")
-                break
 
     except Exception as e:
         print(f"WebSocket error: {e}")
