@@ -41,28 +41,23 @@ async def camera_connection(websocket: WebSocket):
 
     try:
         while True:
-            try:
-                data = await websocket.receive_text()
-                message = json.loads(data)
-                if not ROBOTS_ASSIGNED:
-                    for r in message["robots"]:
-                        robots.append(Robot(**r))
-                        targets = get_target_coordinates(robots)
-                        assign_targets_to_robots(robots, targets)
-                    ROBOTS_ASSIGNED = True
-                    messages_for_robots = set_angle(robots)
-                else:
-                    messages_for_robots = drive(robots)
-                for robot in robots:
-                    message_ = messages_for_robots.get(robot.color)
-                    str_message = f"{message_.command} {message_.speed} {message_.time}"
-                    await ws_connection_manager.send_to_robot(robot, str_message)
-                    print(f"Отправлено роботу {robot.color}")
+            data = await websocket.receive_text()
+            message = json.loads(data)
+            if not ROBOTS_ASSIGNED:
+                for r in message["robots"]:
+                    robots.append(Robot(**r))
+                    targets = get_target_coordinates(robots)
+                    assign_targets_to_robots(robots, targets)
+                ROBOTS_ASSIGNED = True
+                messages_for_robots = set_angle(robots)
+            else:
+                messages_for_robots = drive(robots)
+            for robot in robots:
+                message_ = messages_for_robots.get(robot.color)
+                str_message = f"{message_.command} {message_.speed} {message_.time}"
+                await ws_connection_manager.send_to_robot(robot, str_message)
+                print(f"Отправлено роботу {robot.color}")
 
-            except json.JSONDecodeError:
-                print("Ошибка декодирования JSON")
-            except Exception as e:
-                print(f"Ошибка при приеме сообщения: {e}")
 
     except Exception as e:
         print(f"WebSocket error: {e}")
