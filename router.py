@@ -24,8 +24,18 @@ async def robot_connection(websocket: WebSocket, color: str = Query(...)):
     await ws_connection_manager.connect(websocket, color)
     print(f"Робот {color} подключен")
 
-    while True:
-        pass
+    try:
+        while True:
+            try:
+                await websocket.receive_text()
+            except Exception as e:
+                print(f"Ошибка при приеме сообщения: {e}")
+                break
+
+    except Exception as e:
+        print(f"WebSocket error: {e}")
+    finally:
+        ws_connection_manager.disconnect(websocket)
 
 
 @router.websocket("/ws/camera/")
