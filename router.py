@@ -1,6 +1,7 @@
-from fastapi import APIRouter, WebSocket, Query
+from fastapi import APIRouter, WebSocket, Query, WebSocketDisconnect
 from fastapi.responses import Response
 import json
+
 
 from robot import Robot, get_target_coordinates, assign_targets_to_robots, set_angle, drive
 from websocket_manager import ws_connection_manager
@@ -27,6 +28,9 @@ async def robot_connection(websocket: WebSocket, color: str = Query(...)):
     try:
         while True:
             await websocket.receive_text()
+    except WebSocketDisconnect:
+        print("Connectin closed")
+        await websocket.close()
     except Exception as e:
         print(f"WebSocket error: {e}")
     finally:
@@ -57,8 +61,9 @@ async def camera_connection(websocket: WebSocket):
                 str_message = f"{message_.command} {message_.speed} {message_.time}"
                 await ws_connection_manager.send_to_robot(robot, str_message)
                 print(f"Отправлено роботу {robot.color}")
-
-
+    except WebSocketDisconnect:
+        print("Connectin closed")
+        await websocket.close()
     except Exception as e:
         print(f"WebSocket error: {e}")
     finally:
