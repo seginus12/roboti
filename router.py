@@ -51,7 +51,7 @@ async def camera_connection(websocket: WebSocket):
                 message = json.loads(data)
                 if not ROBOTS_ASSIGNED:
                     for r in message["robots"]:
-                        robots.appengtid(Robot(**r))
+                        robots.append(Robot(**r))
                         targets = get_target_coordinates(robots)
                         assign_targets_to_robots(robots, targets)
                     ROBOTS_ASSIGNED = True
