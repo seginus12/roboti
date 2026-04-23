@@ -30,6 +30,7 @@ async def robot_connection(websocket: WebSocket, color: str = Query(...)):
                 await websocket.receive_text()
             except Exception as e:
                 print(f"Ошибка при приеме сообщения: {e}")
+                break
 
     except Exception as e:
         print(f"WebSocket error: {e}")
