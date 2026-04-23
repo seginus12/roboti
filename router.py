@@ -59,7 +59,9 @@ async def camera_connection(websocket: WebSocket):
                 else:
                     messages_for_robots = drive(robots)
                 for robot in robots:
-                    await ws_connection_manager.send_to_robot(robot, str(messages_for_robots.get(robot.color).__dict__))
+                    message_ = messages_for_robots.get(robot.color)
+                    str_message = f"{message_.command} {message_.speed} {message_.time}"
+                    await ws_connection_manager.send_to_robot(robot, str_message)
                     print(f"Отправлено роботу {robot.color}")
 
             except json.JSONDecodeError:
