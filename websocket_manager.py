@@ -2,6 +2,8 @@ from typing import List, Dict, Any, Optional
 from fastapi import WebSocket
 import logging
 
+from robot import Robot
+
 logger = logging.getLogger(__name__)
 
 
@@ -80,9 +82,9 @@ class WSConnectionManager:
 
         logger.info("Менеджер соединений очищен")
 
-    async def send_to_color(self, color: str, message: str) -> None:
+    async def send_to_robot(self, robot: Robot, message: str) -> None:
         for connection, data in self.client_data.items():
-            if data.get("color") == color:
+            if data.get("color") == robot.color:
                 await self.send_personal_message(message, connection)
 
 

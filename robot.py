@@ -66,7 +66,7 @@ class Robot:
     """
     Класс, описывающий робота.
 
-    :param id: уникальный идентификатор
+    :param color: уникальный идентификатор
     :param x: координата x
     :param y: координата y
     :param angle: угол поворота (в градусах или радианах)
@@ -80,9 +80,9 @@ class Robot:
     """
 
     def __init__(
-        self, id, x, y, angle, radius=5, finish_radius=5, target_x=None, target_y=None, target_angle=None
+        self, color, x, y, angle, radius=5, finish_radius=5, target_x=None, target_y=None, target_angle=None
     ):
-        self.id = id
+        self.color = color
         self.x = x
         self.y = y
         self.angle = angle
@@ -96,7 +96,7 @@ class Robot:
 
     def __repr__(self):
         return (
-            f"Robot(id={self.id}, x={self.x}, y={self.y}, angle={self.angle}, "
+            f"Robot(color={self.color}, x={self.x}, y={self.y}, angle={self.angle}, "
             f"radius={self.radius}, finished={self.finished})"
         )
 
@@ -108,7 +108,7 @@ class Robot:
 
     def check_collision_with(self, other):
         """Проверяет коллизию с другим роботом (использует квадраты расстояний)"""
-        if self.id == other.id:
+        if self.color == other.color:
             return False
         r_sum = self.radius + other.radius
         return self.distance_squared_to(other) < r_sum * r_sum
@@ -165,11 +165,11 @@ def get_robots():
     """
     if pohody_debug:
         return [
-            Robot(id=1, x=62, y=12, angle=1, radius=5, finish_radius=5),
-            Robot(id=2, x=1, y=1, angle=1, radius=5, finish_radius=5),
-            Robot(id=3, x=5, y=5, angle=1, radius=5, finish_radius=5),
-            Robot(id=4, x=10, y=10, angle=1, radius=5, finish_radius=5),
-            Robot(id=5, x=10, y=20, angle=1, radius=5, finish_radius=5),
+            Robot(color=1, x=62, y=12, angle=1, radius=5, finish_radius=5),
+            Robot(color=2, x=1, y=1, angle=1, radius=5, finish_radius=5),
+            Robot(color=3, x=5, y=5, angle=1, radius=5, finish_radius=5),
+            Robot(color=4, x=10, y=10, angle=1, radius=5, finish_radius=5),
+            Robot(color=5, x=10, y=20, angle=1, radius=5, finish_radius=5),
         ]
     return None  # данные с камеры
 
@@ -178,10 +178,11 @@ def get_target_coordinates(robots):
     """
     Рассчитывает координаты целевых точек для каждого робота.
     Алгоритм остаётся неизменным.
-    Возвращает словарь {id_робота: (x, y)}.
+    Возвращает словарь {color_робота: (x, y)}.
+    976 x 651
     """
-    map_size = 100  # размер карты
-    collision_distance = 10  # дистанция между роботами и краями карты
+    map_size = 651  # размер карты
+    collision_distance = 100  # дистанция между роботами и краями карты
     N = len(robots)
     if N == 0:
         return {}
@@ -225,7 +226,7 @@ def get_target_coordinates(robots):
             tx = round(cx + R * math.cos(vertex_angle))
             ty = round(cy + R * math.sin(vertex_angle))
 
-        targets[robot.id] = (tx, ty)
+        targets[robot.color] = (tx, ty)
 
     return targets
 
@@ -233,8 +234,8 @@ def get_target_coordinates(robots):
 def assign_targets_to_robots(robots, targets):
     """Присваивает каждому роботу его целевую точку"""
     for robot in robots:
-        if robot.id in targets:
-            robot.set_target(targets[robot.id][0], targets[robot.id][1])
+        if robot.color in targets:
+            robot.set_target(targets[robot.color][0], targets[robot.color][1])
         else:
             robot.set_target(None, None)  # если цели нет (но по логике должна быть)
 
@@ -281,7 +282,7 @@ def main():
 
     print("Целевые точки:")
     for robot in robots:
-        print(f"Робот {robot.id}: ({robot.target_x}, {robot.target_y})")
+        print(f"Робот {robot.color}: ({robot.target_x}, {robot.target_y})")
 
     # Проверка коллизий между роботами (на начальных позициях)
     print("\nПроверка коллизий на начальных позициях:")
@@ -289,7 +290,7 @@ def main():
         print("Обнаружены коллизии:")
         for r in robots:
             if r.has_collision:
-                print(f"Робот {r.id} в коллизии (координаты: ({r.x}, {r.y}))")
+                print(f"Робот {r.color} в коллизии (координаты: ({r.x}, {r.y}))")
     else:
         print("Коллизий не обнаружено")
 
@@ -298,32 +299,35 @@ def main():
     check_all_finished(robots)
     for robot in robots:
         status = "финишировал" if robot.finished else "в пути"
-        print(f"Робот {robot.id}: {status}")
+        print(f"Робот {robot.color}: {status}")
     set_angle(robots)
 
 
-def set_angle(robots: list[Robot]) -> None:
+def set_angle(robots: list[Robot]) -> dict[str, RobotCommand]:
     """
     Поворот роботов.
 
     Не учитываем их новый угол поворота, т.к. он может быть немного сбит.
 
     """
+    commands: dict[str, RobotCommand] = {}
     for r in robots:
         if r.finished:
             continue
         direction, speed, time_val = calculate_speed_and_time(r.target_angle)
-        print(direction, speed, time_val)
-        RobotCommand(direction, speed, time_val)
+        commands[r.color] = RobotCommand(direction, speed, time_val)
         r.target_angle = r.calculate_rotation()
+    return commands
 
 
-def drive(robots: list[Robot]) -> None:
+def drive(robots: list[Robot]) -> dict[str, RobotCommand]:
     """Движение роботов"""
+    commands: dict[str, RobotCommand] = {}
     for r in robots:
         if r.finished:
             continue
-        RobotCommand(turns_map["straight"], speed_, 2)
+        commands[r.color] = RobotCommand(turns_map["straight"], speed_, 0.5)
+    return commands
 
 
 if __name__ == "__main__":

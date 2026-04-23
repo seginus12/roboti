@@ -1,6 +1,8 @@
 from fastapi import APIRouter, WebSocket, Query
 from fastapi.responses import Response
 import json
+
+from robot import Robot, get_target_coordinates, assign_targets_to_robots, set_angle, drive
 from websocket_manager import ws_connection_manager
 
 router = APIRouter()
@@ -12,6 +14,9 @@ ROBOTS_MAPPING = {
     "yellow": "10.0.6.104",
     "blue": "10.0.6.105",
 }
+
+ROBOTS_ASSIGNED = False
+robots = []
 
 
 @router.websocket("/ws/robots/")
@@ -35,6 +40,7 @@ async def robot_connection(websocket: WebSocket, color: str = Query(...)):
 
 @router.websocket("/ws/camera/")
 async def camera_connection(websocket: WebSocket):
+    global ROBOTS_ASSIGNED
     await websocket.accept()
     print("Камера подключена")
 
@@ -43,13 +49,18 @@ async def camera_connection(websocket: WebSocket):
             try:
                 data = await websocket.receive_text()
                 message = json.loads(data)
-                color = message.get("color")
-
-                if color and color in ROBOTS_MAPPING:
-                    await ws_connection_manager.send_to_color(color, data)
-                    print(f"Отправлено роботу {color}: {data}")
+                if not ROBOTS_ASSIGNED:
+                    for r in message:
+                        robots.append(Robot(**r))
+                        targets = get_target_coordinates(robots)
+                        assign_targets_to_robots(robots, targets)
+                    ROBOTS_ASSIGNED = True
+                    messages_for_robots = set_angle(robots)
                 else:
-                    print(f"Некорректный цвет или цвет не найден: {color}")
+                    messages_for_robots = drive(robots)
+                for robot in robots:
+                    await ws_connection_manager.send_to_robot(robot, messages_for_robots.get(robot.color))
+                    print(f"Отправлено роботу {robot.color}")
 
             except json.JSONDecodeError:
                 print("Ошибка декодирования JSON")
