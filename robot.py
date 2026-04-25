@@ -42,8 +42,8 @@ speed_ = 110
 turns_map: dict[str, int] = {
     "right": 4,
     "left": 3,
-    "straight": 2,
-    "back": 1,
+    "straight": 1,
+    "back": 2,
 }
 """
 Мапинг движения.
