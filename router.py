@@ -3,7 +3,7 @@ from fastapi.responses import Response
 import json
 
 
-from robot import Robot, get_target_coordinates, assign_targets_to_robots, set_angle, drive
+from robot import Robot, get_target_coordinates, assign_targets_to_robots, set_angle, drive, check_all_finished
 from websocket_manager import ws_connection_manager
 
 router = APIRouter()
@@ -49,12 +49,17 @@ async def camera_connection(websocket: WebSocket):
             message = json.loads(data)
             if not ROBOTS_ASSIGNED:
                 for r in message["robots"]:
-                    robots.append(Robot(**r))
+                    robots.append(Robot(**r, finish_radius=200))
                     targets = get_target_coordinates(robots)
                     assign_targets_to_robots(robots, targets)
                 ROBOTS_ASSIGNED = True
                 messages_for_robots = set_angle(robots)
             else:
+                is_all_finished = check_all_finished(robots)
+                print(f"Is all finished? {is_all_finished}")
+                if is_all_finished:
+                    print("All finished!!")
+                    raise WebSocketDisconnect
                 messages_for_robots = drive(robots)
             for robot in robots:
                 message_ = messages_for_robots.get(robot.color)
