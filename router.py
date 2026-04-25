@@ -64,7 +64,7 @@ async def camera_connection(websocket: WebSocket):
                 messages_for_robots = drive(robots)
             for robot in robots:
                 message_ = messages_for_robots.get(robot.color)
-                str_message = f"{message_.command} {message_.speed} {message_.time}"
+                str_message = f"{message_.command} 0.3 {message_.time}"
                 await ws_connection_manager.send_to_robot(robot, str_message)
                 print(f"Отправлено роботу {robot.color}")
             time.sleep(2)
