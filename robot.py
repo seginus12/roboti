@@ -181,8 +181,8 @@ def get_target_coordinates(robots):
     Возвращает словарь {color_робота: (x, y)}.
     976 x 651
     """
-    map_size = 651  # размер карты
-    collision_distance = 100  # дистанция между роботами и краями карты
+    map_size = 1080  # размер карты
+    collision_distance = 1080  # дистанция между роботами и краями карты
     N = len(robots)
     if N == 0:
         return {}
