@@ -315,6 +315,9 @@ def set_angle(robots: list[Robot]) -> dict[str, RobotCommand]:
         if r.finished:
             continue
         direction, speed, time_val = calculate_speed_and_time(r.target_angle)
+        if r.angle + 5 < r.target_angle:
+            commands[r.color] = RobotCommand(direction, 0, 0)
+            continue
         commands[r.color] = RobotCommand(direction, speed, time_val)
         r.target_angle = r.calculate_rotation()
     return commands

@@ -18,6 +18,7 @@ ROBOTS_MAPPING = {
 }
 
 ROBOTS_ASSIGNED = False
+ROBOTS_ASSIGNED_TARGETS = False
 robots = []
 
 
@@ -41,6 +42,7 @@ async def robot_connection(websocket: WebSocket, color: str = Query(...)):
 @router.websocket("/ws/camera/")
 async def camera_connection(websocket: WebSocket):
     global ROBOTS_ASSIGNED
+    global ROBOTS_ASSIGNED_TARGETS
     await websocket.accept()
     print("Камера подключена")
 
@@ -54,7 +56,10 @@ async def camera_connection(websocket: WebSocket):
                     targets = get_target_coordinates(robots)
                     assign_targets_to_robots(robots, targets)
                 ROBOTS_ASSIGNED = True
+            if not ROBOTS_ASSIGNED_TARGETS:
                 messages_for_robots = set_angle(robots)
+                if not any(command.speed for _, command in messages_for_robots):
+                    ROBOTS_ASSIGNED_TARGETS = True
             else:
                 is_all_finished = check_all_finished(robots)
                 print(f"Is all finished? {is_all_finished}")
