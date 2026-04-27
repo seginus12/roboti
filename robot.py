@@ -146,10 +146,9 @@ class Robot:
         target_angle_deg = math.degrees(target_angle_rad)
 
         # Разница углов (без нормализации)
-        delta = (target_angle_deg - self.angle) % 360
+        delta = ((target_angle_deg - self.angle) % 360 + 360) % 360
 
-        # Выбираем больший поворот: если дельта <= 180, то идём в другую сторону (360 - дельта)
-        return delta - 360 if delta <= 180 else delta
+        return delta
 
 
 # ============================================================
