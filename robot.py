@@ -138,17 +138,13 @@ class Robot:
 
     def calculate_rotation(self) -> float:
         """
-        Вычисляет минимальный угол поворота робота (со знаком) для направления на целевую точку.
+        Вычисляет абсолютный угол направления на целевую точку (0-360°).
         """
 
-        # Угол от робота до точки в радианах, затем в градусах
         target_angle_rad = math.atan2(self.target_y - self.y, self.target_x - self.x)
         target_angle_deg = math.degrees(target_angle_rad)
 
-        # Разница углов (без нормализации)
-        delta = ((target_angle_deg - self.angle) % 360 + 360) % 360
-
-        return delta
+        return (target_angle_deg % 360 + 360) % 360
 
 
 # ============================================================
@@ -313,10 +309,11 @@ def set_angle(robots: list[Robot]) -> dict[str, RobotCommand]:
     for r in robots:
         if r.finished:
             continue
-        direction, speed, time_val = calculate_speed_and_time(abs(r.target_angle-r.angle))
+        delta = ((r.target_angle - r.angle + 180) % 360) - 180
+        direction, speed, time_val = calculate_speed_and_time(abs(delta))
         print(f"{direction}, {speed}, {time_val}")
-        print(f"{r.color} ----------- {abs(r.target_angle-r.angle)}")
-        if r.target_angle - 20 < r.angle <r.target_angle + 20:
+        print(f"{r.color} ----------- {abs(delta)}")
+        if abs(delta) < 20:
             commands[r.color] = RobotCommand(direction, 0, 0)
             continue
         commands[r.color] = RobotCommand(direction, speed, time_val)
