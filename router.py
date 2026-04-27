@@ -58,7 +58,7 @@ async def camera_connection(websocket: WebSocket):
                 ROBOTS_ASSIGNED = True
             if not ROBOTS_ASSIGNED_TARGETS:
                 messages_for_robots = set_angle(robots)
-                if not any(command.speed for _, command in messages_for_robots):
+                if not any(command.speed for _, command in messages_for_robots.items()):
                     ROBOTS_ASSIGNED_TARGETS = True
             else:
                 is_all_finished = check_all_finished(robots)
@@ -72,7 +72,7 @@ async def camera_connection(websocket: WebSocket):
                 if robot.finished:
                     str_message = f"{message_.command} 0 0"
                 else:
-                    str_message = f"{message_.command} 0.3 {message_.time}"
+                    str_message = f"{message_.command} {message_.speed} {message_.time}"
                 await ws_connection_manager.send_to_robot(robot, str_message)
                 print(f"Отправлено роботу {robot.color}")
             time.sleep(2)
