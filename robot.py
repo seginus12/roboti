@@ -42,8 +42,8 @@ speed_ = 110
 turns_map: dict[str, int] = {
     "right": 4,
     "left": 3,
-    "straight": 1,
-    "back": 2,
+    "straight": 2,
+    "back": 1,
 }
 """
 Мапинг движения.
@@ -182,7 +182,7 @@ def get_target_coordinates(robots):
     976 x 651
     """
     map_size = 1080  # размер карты
-    collision_distance = 100  # дистанция между роботами и краями карты
+    collision_distance = 250  # дистанция между роботами и краями карты
     N = len(robots)
     if N == 0:
         return {}
@@ -314,9 +314,14 @@ def set_angle(robots: list[Robot]) -> dict[str, RobotCommand]:
     for r in robots:
         if r.finished:
             continue
-        direction, speed, time_val = calculate_speed_and_time(r.target_angle)
+        direction, speed, time_val = calculate_speed_and_time(abs(r.target_angle-r.angle))
+        print(f"{direction}, {speed}, {time_val}")
+        print(f"{r.color} ----------- {abs(r.target_angle-r.angle)}")
+        if r.target_angle - 20 < r.angle <r.target_angle + 20:
+            commands[r.color] = RobotCommand(direction, 0, 0)
+            continue
         commands[r.color] = RobotCommand(direction, speed, time_val)
-        r.target_angle = r.calculate_rotation()
+        #r.target_angle = r.calculate_rotation()
     return commands
 
 

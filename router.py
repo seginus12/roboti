@@ -2,7 +2,7 @@ from fastapi import APIRouter, WebSocket, Query, WebSocketDisconnect
 from fastapi.responses import Response
 import json
 import time
-
+import asyncio
 
 from robot import Robot, get_target_coordinates, assign_targets_to_robots, set_angle, drive, check_all_finished
 from websocket_manager import ws_connection_manager
@@ -18,7 +18,7 @@ ROBOTS_MAPPING = {
 }
 
 ROBOTS_ASSIGNED = False
-robots = []
+ROBOTS_ASSIGNED_TARGETS = False
 
 
 @router.websocket("/ws/robots/")
@@ -41,33 +41,43 @@ async def robot_connection(websocket: WebSocket, color: str = Query(...)):
 @router.websocket("/ws/camera/")
 async def camera_connection(websocket: WebSocket):
     global ROBOTS_ASSIGNED
+    global ROBOTS_ASSIGNED_TARGETS
     await websocket.accept()
     print("Камера подключена")
-
     try:
         while True:
+            robots = []
             data = await websocket.receive_text()
+            if data == None:
+                print("FUCK VASYA")
+                continue
             message = json.loads(data)
-            if not ROBOTS_ASSIGNED:
-                for r in message["robots"]:
-                    robots.append(Robot(**r, finish_radius=200))
-                    targets = get_target_coordinates(robots)
-                    assign_targets_to_robots(robots, targets)
-                ROBOTS_ASSIGNED = True
+            print(f"CAMERA SAYS {message}")
+            for r in message["robots"]:
+                robots.append(Robot(**r, finish_radius=200))
+            targets = get_target_coordinates(robots)
+            print(f"TARGETS {targets}")
+            assign_targets_to_robots(robots, targets)
+            if not ROBOTS_ASSIGNED_TARGETS:
                 messages_for_robots = set_angle(robots)
+                if not any(command.speed for _, command in messages_for_robots.items()):
+                    ROBOTS_ASSIGNED_TARGETS = True
             else:
                 is_all_finished = check_all_finished(robots)
                 print(f"Is all finished? {is_all_finished}")
                 if is_all_finished:
                     print("All finished!!")
-                    raise WebSocketDisconnect
+                    #raise WebSocketDisconnect
                 messages_for_robots = drive(robots)
             for robot in robots:
                 message_ = messages_for_robots.get(robot.color)
-                str_message = f"{message_.command} 0.3 {message_.time}"
+                if robot.finished:
+                    str_message = f"{message_.command} 0 0"
+                else:
+                    str_message = f"{message_.command} {message_.speed} {message_.time}"
                 await ws_connection_manager.send_to_robot(robot, str_message)
                 print(f"Отправлено роботу {robot.color}")
-            time.sleep(2)
+            await asyncio.sleep(3)
     except WebSocketDisconnect:
         print("Connectin closed")
         await websocket.close()
