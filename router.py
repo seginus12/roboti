@@ -71,6 +71,8 @@ async def camera_connection(websocket: WebSocket):
                 messages_for_robots = drive(robots)
             for robot in robots:
                 message_ = messages_for_robots.get(robot.color)
+                if not message_:
+                    continue
                 if robot.finished:
                     str_message = f"{message_.command} 0 0"
                 else:
