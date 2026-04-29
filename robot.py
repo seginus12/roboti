@@ -327,7 +327,7 @@ def set_angle(robots: list[Robot]) -> dict[str, RobotCommand]:
         direction, speed, time_val = calculate_speed_and_time(abs(delta))
         print(f"{direction}, {speed}, {time_val}")
         print(f"{r.color} ----------- {abs(delta)}")
-        if abs(delta) < 20:
+        if abs(delta) < 10:
             commands[r.color] = RobotCommand(direction, 0, 0)
             continue
         commands[r.color] = RobotCommand(direction, speed, time_val)

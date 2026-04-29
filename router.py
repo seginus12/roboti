@@ -54,7 +54,7 @@ async def camera_connection(websocket: WebSocket):
             message = json.loads(data)
             print(f"CAMERA SAYS {message}")
             for r in message["robots"]:
-                robots.append(Robot(**r, finish_radius=200))
+                robots.append(Robot(**r, finish_radius=100))
             targets = get_target_coordinates(robots)
             print(f"TARGETS {targets}")
             assign_targets_to_robots(robots, targets)
