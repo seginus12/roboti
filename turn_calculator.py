@@ -99,49 +99,11 @@ class RobotTurnCalculator:
 
 def calculate_speed_and_time(user_input):
     calculator = RobotTurnCalculator()
-
-    # print("\n" + "=" * 60)
-    # print("🤖 КАЛЬКУЛЯТОР ПОВОРОТОВ РОБОТА")
-    # print("=" * 60)
-    # print("Введите угол поворота в градусах:")
-    # print("  положительный = влево (например: 30)")
-    # print("  отрицательный = вправо (например: -45)")
-    # print("  0 = остановка")
-    # print("\nКоманды:")
-    # print("  q, quit, exit - выход")
-    # print("  help, h, ?    - показать справку")
-    # print("=" * 60)
-
     while True:
         try:
-            # Получаем ввод
-            # user_input = input("\n👉 Угол: ").strip().lower()
-
-            # Проверка на выход
-            # if user_input in ["q", "quit", "exit", "выход"]:
-            #     print("\n👋 До свидания!")
-            #     break
-
-            # # Проверка на справку
-            # if user_input in ["help", "h", "?", "помощь"]:
-            #     print("\n📖 СПРАВКА:")
-            #     print("  Введите угол поворота в градусах")
-            #     print("  Примеры:")
-            #     print("    30  → поворот влево на 30°")
-            #     print("    -45 → поворот вправо на 45°")
-            #     print("    0   → остановка")
-            #     print("    q   → выход")
-            #     continue
-
-            # # Пропускаем пустой ввод
-            # if not user_input:
-            #     continue
-
-            # Преобразуем в число
             try:
                 angle = float(user_input)
             except ValueError:
-                #print("❌ Ошибка: введите число (угол в градусах)")
                 raise Exception("мда")
 
             # Рассчитываем параметры
@@ -154,58 +116,11 @@ def calculate_speed_and_time(user_input):
                 predicted = 0
 
             print(f"Предсказанный угол: {predicted}")
-            #
-            # if angle > 0:
-            #     print(f"📐 Желаемый угол: {angle}° ВЛЕВО")
-            # elif angle < 0:
-            #     print(f"📐 Желаемый угол: {abs(angle)}° ВПРАВО")
-            # else:
-            #     print(f"📐 Желаемый угол: 0° (СТОП)")
-
             if angle != 0:
-                # # Выводим команду
-                # print(f"\n🎮 КОМАНДА:")
-                # print(f"   {direction} {speed} {time_val}")
                 return direction, speed, time_val
-
-                # # Детальные параметры
-                # dir_name = (
-                #     "ВЛЕВО"
-                #     if direction == 3
-                #     else "ВПРАВО" if direction == 4 else "СТОП"
-                # )
-                # print(f"\n📊 ПАРАМЕТРЫ:")
-                # print(f"   Направление: {direction} ({dir_name})")
-                # print(f"   Скорость: {speed}")
-                # print(f"   Время: {time_val} сек")
-                #
-                # # Прогноз
-                # print(f"\n🔮 Прогнозируемый угол: {predicted}°")
-                #
-                # # Погрешность
-                # error = abs(abs(angle) - predicted)
-                # if error > 0.5:
-                #     print(f"⚠️  Погрешность: ±{error}°")
-                # elif error > 0:
-                #     print(f"✅ Точность: ±{error}°")
-                # else:
-                #     print(f"✅ Идеально!")
-            # else:
-            #     print(f"\n🎮 КОМАНДА:")
-            #     print(f"   5 0 0")
-            #     print(f"\n📊 ПАРАМЕТРЫ:")
-            #     print(f"   Направление: 5 (СТОП)")
-            #     print(f"   Скорость: 0")
-            #     print(f"   Время: 0 сек")
-            #
-            # print("-" * 50)
-
-        # except KeyboardInterrupt:
-        #     print("\n\n👋 Прервано пользователем. До свидания!")
-        #     break
         except Exception as e:
             print(f"❌ Непредвиденная ошибка: {e}")
 
 
 if __name__ == "__main__":
-    calculate_speed_and_time()
+    calculate_speed_and_time(180)
