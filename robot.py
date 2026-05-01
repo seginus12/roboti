@@ -1,4 +1,5 @@
 import math
+import itertools
 from dataclasses import dataclass
 
 from turn_calculator import calculate_speed_and_time
@@ -7,8 +8,8 @@ speed_ = 110
 turns_map: dict[str, int] = {
     "right": 4,
     "left": 3,
-    "straight": 1,
-    "back": 2,
+    "straight": 2,
+    "back": 1,
 }
 """
 Мапинг движения.
@@ -103,18 +104,13 @@ class Robot:
 
     def calculate_rotation(self) -> float:
         """
-        Вычисляет минимальный угол поворота робота (со знаком) для направления на целевую точку.
+        Вычисляет абсолютный угол направления на целевую точку (0-360°).
         """
 
-        # Угол от робота до точки в радианах, затем в градусах
         target_angle_rad = math.atan2(self.target_y - self.y, self.target_x - self.x)
         target_angle_deg = math.degrees(target_angle_rad)
 
-        # Разница углов (без нормализации)
-        delta = (target_angle_deg - self.angle) % 360
-
-        # Выбираем больший поворот: если дельта <= 180, то идём в другую сторону (360 - дельта)
-        return delta - 360 if delta <= 180 else delta
+        return (target_angle_deg % 360 + 360) % 360
 
 
 # ============================================================
@@ -130,68 +126,81 @@ def get_robots():
     """
     if pohody_debug:
         return [
-            Robot(color=1, x=62, y=12, angle=1, radius=5, finish_radius=5),
-            Robot(color=2, x=1, y=1, angle=1, radius=5, finish_radius=5),
-            Robot(color=3, x=5, y=5, angle=1, radius=5, finish_radius=5),
-            Robot(color=4, x=10, y=10, angle=1, radius=5, finish_radius=5),
-            Robot(color=5, x=10, y=20, angle=1, radius=5, finish_radius=5),
+            Robot(color="red", x=365, y=224, angle=1, radius=5, finish_radius=5),
+            Robot(color="blue", x=547, y=393, angle=1, radius=5, finish_radius=5),
+            Robot(color="green", x=393, y=800, angle=1, radius=5, finish_radius=5),
         ]
     return None  # данные с камеры
+
+
 
 
 def get_target_coordinates(robots):
     """
     Рассчитывает координаты целевых точек для каждого робота.
-    Алгоритм остаётся неизменным.
+    Назначает каждой машине ближайшую доступную точку,
+    минимизируя суммарное расстояние перемещения.
     Возвращает словарь {color_робота: (x, y)}.
-    976 x 651
     """
-    map_size = 1080  # размер карты
-    collision_distance = 100  # дистанция между роботами и краями карты
+    map_size = 1080
+    collision_distance = 250
     N = len(robots)
     if N == 0:
         return {}
 
-    # Центр карты
     cx = map_size / 2
     cy = map_size / 2
-
     margin = collision_distance
 
+    # 1. Расчёт радиуса окружности целевых точек (оставляем вашу логику)
     if N == 1:
         R = 0
     else:
-        # радиусы для того чтобы не выехать за карту
         max_R_x = cx - margin
         max_R_y = cy - margin
         max_R = min(max_R_x, max_R_y)
 
-        if N > 1:
-            # Если роботов много (но вероятно больше 5 не будет)
-            min_vertex_distance = 2 * max_R * math.sin(math.pi / N)
-            if min_vertex_distance < collision_distance and N > 1:
-                max_R = collision_distance / (2 * math.sin(math.pi / N))
-
+        min_vertex_distance = 2 * max_R * math.sin(math.pi / N)
+        if min_vertex_distance < collision_distance:
+            max_R = collision_distance / (2 * math.sin(math.pi / N))
         R = max_R
 
-    # чтобы роботы ехали к ближайшей точке
-    robots_with_angle = []
-    for r in robots:
-        angle = math.atan2(r.y - cy, r.x - cx)
-        robots_with_angle.append((angle, r))
-    robots_with_angle.sort(key=lambda x: x[0])
+    # 2. Генерация целевых точек (равномерно по окружности)
+    target_points = []
+    for i in range(N):
+        vertex_angle = i * 2 * math.pi / N
+        tx = round(cx + R * math.cos(vertex_angle))
+        ty = round(cy + R * math.sin(vertex_angle))
+        target_points.append((tx, ty))
 
     targets = {}
-    for i, (_, robot) in enumerate(robots_with_angle):
-        if N == 1:
-            tx, ty = cx, cy  # тупо в центр
-        else:
-            # Угол вершины (начинаем с 0 и идём против часовой стрелки)
-            vertex_angle = i * 2 * math.pi / N
-            tx = round(cx + R * math.cos(vertex_angle))
-            ty = round(cy + R * math.sin(vertex_angle))
 
-        targets[robot.color] = (tx, ty)
+    # 3. Для одного робота точка всегда в центре
+    if N == 1:
+        targets[robots[0].color] = target_points[0]
+        return targets
+
+    # 4. Оптимальное назначение "робот -> точка" по минимальному расстоянию
+    # Для N <= 5 перебор перестановок работает мгновенно и гарантирует лучший результат
+    best_perm = None
+    min_total_sq_dist = float('inf')
+
+    for perm in itertools.permutations(range(N)):
+        total_sq_dist = 0
+        for r_idx in range(N):
+            t_idx = perm[r_idx]
+            dx = robots[r_idx].x - target_points[t_idx][0]
+            dy = robots[r_idx].y - target_points[t_idx][1]
+            total_sq_dist += dx * dx + dy * dy  # квадрат расстояния быстрее sqrt
+
+        if total_sq_dist < min_total_sq_dist:
+            min_total_sq_dist = total_sq_dist
+            best_perm = perm
+
+    # 5. Запись результата
+    for r_idx in range(N):
+        t_idx = best_perm[r_idx]
+        targets[robots[r_idx].color] = target_points[t_idx]
 
     return targets
 
@@ -249,23 +258,23 @@ def main():
     for robot in robots:
         print(f"Робот {robot.color}: ({robot.target_x}, {robot.target_y})")
 
-    # Проверка коллизий между роботами (на начальных позициях)
-    print("\nПроверка коллизий на начальных позициях:")
-    if check_all_collisions(robots):
-        print("Обнаружены коллизии:")
-        for r in robots:
-            if r.has_collision:
-                print(f"Робот {r.color} в коллизии (координаты: ({r.x}, {r.y}))")
-    else:
-        print("Коллизий не обнаружено")
-
-    # Проверка, достигли ли роботы финиша
-    print("\nПроверка достижения финиша:")
-    check_all_finished(robots)
-    for robot in robots:
-        status = "финишировал" if robot.finished else "в пути"
-        print(f"Робот {robot.color}: {status}")
-    set_angle(robots)
+    # # Проверка коллизий между роботами (на начальных позициях)
+    # print("\nПроверка коллизий на начальных позициях:")
+    # if check_all_collisions(robots):
+    #     print("Обнаружены коллизии:")
+    #     for r in robots:
+    #         if r.has_collision:
+    #             print(f"Робот {r.color} в коллизии (координаты: ({r.x}, {r.y}))")
+    # else:
+    #     print("Коллизий не обнаружено")
+    #
+    # # Проверка, достигли ли роботы финиша
+    # print("\nПроверка достижения финиша:")
+    # check_all_finished(robots)
+    # for robot in robots:
+    #     status = "финишировал" if robot.finished else "в пути"
+    #     print(f"Робот {robot.color}: {status}")
+    # set_angle(robots)
 
 
 def set_angle(robots: list[Robot]) -> dict[str, RobotCommand]:
@@ -279,12 +288,15 @@ def set_angle(robots: list[Robot]) -> dict[str, RobotCommand]:
     for r in robots:
         if r.finished:
             continue
-        direction, speed, time_val = calculate_speed_and_time(r.target_angle)
-        if r.angle + 5 < r.target_angle:
+        delta = ((r.target_angle - r.angle + 180) % 360) - 180
+        direction, speed, time_val = calculate_speed_and_time(abs(delta))
+        print(f"{direction}, {speed}, {time_val}")
+        print(f"{r.color} ----------- {abs(delta)}")
+        if abs(delta) < 10:
             commands[r.color] = RobotCommand(direction, 0, 0)
             continue
         commands[r.color] = RobotCommand(direction, speed, time_val)
-        r.target_angle = r.calculate_rotation()
+        #r.target_angle = r.calculate_rotation()
     return commands
 
 
